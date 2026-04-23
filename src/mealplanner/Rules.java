@@ -19,6 +19,10 @@ public class Rules {
     public readMenu(Scanner sc){
 
     }*/
+    public void showCategory(){
+
+    }
+
     public void showFood(Map<String, List<MealModel>> mealModels){
 
         if (mealModels == null || mealModels.isEmpty()) {
