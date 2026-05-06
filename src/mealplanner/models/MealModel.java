@@ -5,14 +5,26 @@ import java.util.List;
 public class MealModel {
     String name;
     List<String> ingredients;
+    int id;
+    public MealModel(){
 
+    }
     public MealModel(String name,List<String> ingredients) {
         this.name=name;
         this.ingredients=ingredients;
+        id = 0;
     }
 
     public String getName() {
         return name;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public void setName(String name) {
@@ -29,7 +41,7 @@ public class MealModel {
 
     @Override
     public String toString() {
-        return "{" + "name='" + name + '\'' +
+        return "{"+ "id = " + id +"name='" + name + '\'' +
                ", ingredients=" + ingredients +
                '}';
     }

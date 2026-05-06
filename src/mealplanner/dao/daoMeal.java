@@ -59,7 +59,7 @@ public class daoMeal {
         try (PreparedStatement ps = con.prepareStatement(sqlAddIngredients)) {
 
             for(String ingredient: mealIngredients) {
-                ps.setString(1, ingredient);
+                ps.setString(1, ingredient.trim());
                 ps.setInt(2, mealId);
                 ps.addBatch();
             }
@@ -100,7 +100,7 @@ public class daoMeal {
 
     public Map<String, List<MealModel>> getMealsByCategory(String category) throws SQLException {
         String sql = """
-                SELECT m.category, m.meal, i.ingredient
+                SELECT m.category, m.meal, i.ingredient, m.meal_id 
                 FROM meals m
                 LEFT JOIN ingredients i ON m.meal_id = i.meal_id
                 WHERE m.category = ?
@@ -109,12 +109,33 @@ public class daoMeal {
         return getMealsInternal(sql, category);
     }
 
+    public Map<String, List<MealModel>> getMealsOrderByMeal(String category) throws SQLException {
+        String sql = """
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                WHERE m.category = ?
+                ORDER BY m.meal;
+                """;
+        return getMealsInternal(sql, category);
+    }
+
     public Map<String, List<MealModel>> getAllMeals() throws SQLException {
         String sql = """
-                SELECT m.category, m.meal, i.ingredient
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
                 FROM meals m
                 LEFT JOIN ingredients i ON m.meal_id = i.meal_id
                 ORDER BY m.meal_id;
+                """;
+        return getMealsInternal(sql, null);
+    }
+
+    public Map<String, List<MealModel>> getAllMealsOrderByMeal() throws SQLException {
+        String sql = """
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                ORDER BY m.meal;
                 """;
         return getMealsInternal(sql, null);
     }
@@ -134,6 +155,7 @@ public class daoMeal {
                 String category = rs.getString("category");
                 String mealName = rs.getString("meal");
                 String ingredient = rs.getString("ingredient");
+                int mealId = rs.getInt("meal_id");
 
                 List<MealModel> mealsInCategory = map.computeIfAbsent(category, k -> new ArrayList<>());
 
@@ -146,6 +168,7 @@ public class daoMeal {
 
                 if (mealModel == null) {
                     mealModel = new MealModel(mealName, new ArrayList<>());
+                    mealModel.setId(mealId);
                     mealsInCategory.add(mealModel);
                 }
 

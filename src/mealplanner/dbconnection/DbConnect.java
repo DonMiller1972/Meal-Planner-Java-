@@ -57,11 +57,24 @@ public class DbConnect {
                 "ON DELETE CASCADE" +
                 ");";
 
+        String sqlWeekPlan =
+                "CREATE TABLE IF NOT EXISTS plan (" +
+                "meal_option VARCHAR(10), " +
+                "meal_category VARCHAR(10) NOT NULL, " +
+                "meal_id INT NOT NULL, " +
+                "PRIMARY KEY (meal_option, meal_category), " +
+                "CONSTRAINT fk_meal " +
+                "FOREIGN KEY (meal_id) " +
+                "REFERENCES meals(meal_id) " +
+                "ON DELETE CASCADE" +
+                ");";
+
+
         try (Statement stmt = cnn.createStatement()) {
 
             stmt.execute(sqlMeals);
             stmt.execute(sqlIngredients);
-
+            stmt.execute(sqlWeekPlan);
         } catch (SQLException e) {
             e.printStackTrace();
         }
