@@ -1,6 +1,7 @@
 package mealplanner;
 
 import mealplanner.dao.daoMeal;
+import mealplanner.dao.daoPlan;
 import mealplanner.dbconnection.DbConnect;
 
 import java.sql.Connection;
@@ -22,7 +23,8 @@ public class Main {
         db.init();
         Connection con = db.getConnection();
         daoMeal daoMeal = new daoMeal(con);
-        Rules rule = new Rules(sc, daoMeal);
+        daoPlan daoPlan = new daoPlan(con);
+        Rules rule = new Rules(sc, daoMeal, daoPlan);
         rule.mainMenu();
 
     }

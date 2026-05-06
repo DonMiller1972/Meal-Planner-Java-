@@ -29,8 +29,6 @@ public class daoMeal {
 
                 if(truth!=true){
                     con.rollback();
-
-
                 }else{
                     con.commit();
                     System.out.println("The meal has been added!\n");
@@ -38,7 +36,7 @@ public class daoMeal {
 
             } catch (SQLException e){
               try {
-                con.rollback(); // ❌ откат при любой ошибке
+                con.rollback();
               } catch (SQLException ex) {
                 ex.printStackTrace();
               }
@@ -58,81 +56,130 @@ public class daoMeal {
     public boolean addIngredients(int mealId, List<String> mealIngredients) throws SQLException {
         String sqlAddIngredients = "INSERT INTO ingredients(ingredient, meal_id) VALUES ( ?, ?)";
 
-
         try (PreparedStatement ps = con.prepareStatement(sqlAddIngredients)) {
 
             for(String ingredient: mealIngredients) {
-                ps.setString(1, ingredient);
+                ps.setString(1, ingredient.trim());
                 ps.setInt(2, mealId);
                 ps.addBatch();
             }
             ps.executeBatch();
             return true;
+        }catch(SQLException e){
+            e.printStackTrace();
+            return false;
         }
-
 
     }
 
+    public boolean hasAnyMeals() {
+        return isMealEmpty("SELECT 1 FROM meals LIMIT 1", null);
+    }
 
-    public boolean isMealEmpty(){
-        String sql = "SELECT 1 FROM meals LIMIT 1";
+    public boolean hasMealsByCategory(String category) {
+        return isMealEmpty("SELECT 1 FROM meals WHERE category = ? LIMIT 1", category);
+    }
 
-        try (Statement stmt = con.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            System.out.println(rs.next());
-            if (!rs.next()) {
-                return false;
+    private boolean isMealEmpty(String sql, String category){
+
+        try (PreparedStatement stmt = con.prepareStatement(sql)){
+             if(category!=null){
+                stmt.setString(1, category);
             }
+             ResultSet rs = stmt.executeQuery();
+
+                if (!rs.next()) {
+                    return false;
+                }
+
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return true;
+        }
+
+    public Map<String, List<MealModel>> getMealsByCategory(String category) throws SQLException {
+        String sql = """
+                SELECT m.category, m.meal, i.ingredient, m.meal_id 
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                WHERE m.category = ?
+                ORDER BY m.meal_id;
+                """;
+        return getMealsInternal(sql, category);
     }
 
-    public Map<String, List<MealModel>> getAllMeals(){
-        Map<String, List<MealModel>> map = new LinkedHashMap<>();
+    public Map<String, List<MealModel>> getMealsOrderByMeal(String category) throws SQLException {
         String sql = """
-        SELECT m.category, m.meal, i.ingredient
-        FROM meals m
-        LEFT JOIN ingredients i ON m.meal_id = i.meal_id
-        ORDER BY m.category, m.meal
-    """;
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                WHERE m.category = ?
+                ORDER BY m.meal;
+                """;
+        return getMealsInternal(sql, category);
+    }
 
-       // Map<String, List<MealModel>> result = new LinkedHashMap<>();
+    public Map<String, List<MealModel>> getAllMeals() throws SQLException {
+        String sql = """
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                ORDER BY m.meal_id;
+                """;
+        return getMealsInternal(sql, null);
+    }
 
-        try (PreparedStatement stmt = con.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+    public Map<String, List<MealModel>> getAllMealsOrderByMeal() throws SQLException {
+        String sql = """
+                SELECT m.category, m.meal, i.ingredient, m.meal_id
+                FROM meals m
+                LEFT JOIN ingredients i ON m.meal_id = i.meal_id
+                ORDER BY m.meal;
+                """;
+        return getMealsInternal(sql, null);
+    }
 
-            // временная мапа для склейки одинаковых meals
+    private Map<String, List<MealModel>> getMealsInternal(String sql, String categoryMeal) throws SQLException {
+        Map<String, List<MealModel>> map = new LinkedHashMap<>();
+
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            if (categoryMeal != null) {
+                stmt.setString(1, categoryMeal);
+            }
+            ResultSet rs = stmt.executeQuery();
+
             Map<String, MealModel> mealMap = new LinkedHashMap<>();
 
             while (rs.next()) {
                 String category = rs.getString("category");
                 String mealName = rs.getString("meal");
                 String ingredient = rs.getString("ingredient");
+                int mealId = rs.getInt("meal_id");
 
-                // ключ для уникального блюда
-                String key = category ;
+                List<MealModel> mealsInCategory = map.computeIfAbsent(category, k -> new ArrayList<>());
 
-                MealModel meal = mealMap.get(key);
 
-                if (meal == null) {
-                    meal = new MealModel(mealName, new ArrayList<>());
-                    mealMap.put(key, meal);
+                MealModel mealModel = mealsInCategory.stream()
+                        .filter(m -> m.getName().equals(mealName))
+                        .findFirst()
+                        .orElse(null);
 
-                    map.computeIfAbsent(category, k -> new ArrayList<>())
-                            .add(meal);
+
+                if (mealModel == null) {
+                    mealModel = new MealModel(mealName, new ArrayList<>());
+                    mealModel.setId(mealId);
+                    mealsInCategory.add(mealModel);
                 }
+
 
                 if (ingredient != null) {
-                    meal.getIngredients().add(ingredient);
+                    mealModel.getIngredients().add(ingredient);
                 }
             }
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
 
-        return map;
+            return map;
+        }
     }
 
 
