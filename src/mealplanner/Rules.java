@@ -15,31 +15,25 @@ public class Rules {
         this.sc=sc;
         this.daoMeal=daoMeal;
     }
-/*
-    public readMenu(Scanner sc){
 
-    }*/
-    public void showCategory(){
-
-    }
 
     public void showFood(Map<String, List<MealModel>> mealModels){
 
         if (mealModels == null || mealModels.isEmpty()) {
             System.out.println("No meals saved. Add a meal first.");
-            return; // Выходим из метода, ничего не печатая
+            return;
         }
         System.out.println();
         for (Map.Entry<String, List<MealModel>> entry : mealModels.entrySet()) {
             String category = entry.getKey();
             List<MealModel> mealList = entry.getValue();
-
+            System.out.println("Category: " + category);
             for (MealModel meal : mealList) {
-                System.out.println("Category: " + category);
+
                 System.out.println("Name: " + meal.getName());
                 System.out.println("Ingredients:");
 
-                // Печатаем каждый ингредиент с новой строки
+
                 for (String ingredient : meal.getIngredients()) {
                     System.out.println(ingredient.strip());
                 }
@@ -62,19 +56,41 @@ public class Rules {
     public void mainMenu() throws SQLException {
         boolean  circle = true;
         Map<String, List<MealModel>> mealMap = new LinkedHashMap<>();
+        boolean obg = false;
+        boolean show = true;
         while(circle) {
             System.out.println("What would you like to do (add, show, exit)?");
+
             String menu = sc.nextLine().trim().toLowerCase();
             switch (menu) {
                 case "add" -> mealMap = addFood(mealMap);
                 case "show" -> {
-                    if (daoMeal.isMealEmpty()) {
-                        System.out.println("Empty");
-                    }else{
-                        mealMap = daoMeal.getAllMeals();
-                        showFood(mealMap);
-                    }
+                    show=true;
+                    System.out.println("Which category do you want to print (breakfast, lunch, dinner)?");
+                    while(show==true) {
+                        menu = sc.nextLine().trim().toLowerCase();
+                        if (checkCategory(menu)) {
+                            if (menu.equals("all")) {
+                                obg = daoMeal.hasAnyMeals();
+                            } else {
+                                obg = daoMeal.hasMealsByCategory(menu);
+                            }
+                            if (obg != true) {
+                                System.out.println("No meals found.");
+                                show=false;
+                            } else {
+                                if (menu.equals("all")) {
+                                    mealMap = daoMeal.getAllMeals();
+                                } else {
+                                    mealMap = daoMeal.getMealsByCategory(menu);
+                                }
 
+                                //mealMap = daoMeal.getAllMeals();
+                                showFood(mealMap);
+                                show=false;
+                            }
+                        }
+                    }
                 }
                 case "exit" -> {
                     circle = false;
@@ -86,14 +102,14 @@ public class Rules {
     }
 
     public Map<String , List<MealModel>>  addFood(Map<String ,List<MealModel>> mapMeal) throws SQLException {
-        //MealModel meal = new MealModel();
+
         Map<String ,List<MealModel>> map = new LinkedHashMap<>(mapMeal);
 
         String category ="";
         String name = "";
         List<String> ingredients;
         String parts ="";
-        //boolean check;
+
         boolean circle = true;
 
         System.out.println("Which meal do you want to add (breakfast, lunch, dinner)?");
@@ -102,9 +118,7 @@ public class Rules {
             if(checkCategory(category)){
                 circle = false;
             }
-            /*else{
-                System.out.println("Wrong meal category! Choose from: breakfast, lunch, dinner.");
-            }*/
+
         }
         circle = true;
         System.out.println("Input the meal's name:");
@@ -130,29 +144,21 @@ public class Rules {
         ingredients = Arrays.asList(parts.split(","));
         MealModel meal = new MealModel(name, ingredients);
         boolean add = daoMeal.addMeal(category, meal);
-        System.out.println("Added meal: " + add);
-        //meal.setName(name);
-        //meal.setIngredients(ingredients);
+
         if (map.containsKey(category)) {
-            // Если категория есть, берем существующий список и добавляем в него
+
             map.get(category).add(meal);
         } else {
-            // Если категории нет, создаем новый список, добавляем блюдо и кладем в карту
+
             List<MealModel> newList = new ArrayList<>();
             newList.add(meal);
             map.put(category, newList);
         }
-        System.out.println("The meal has been added!");
-/*
-        System.out.printf("Category: %s\n",category);
-        System.out.printf("Name: %s\n",mealName);
-        System.out.println("Ingredients:");
-        for (String ingredient : list) {
-            System.out.printf("%s\n",ingredient);
-        }*/
+        //System.out.println("The meal has been added!");
+
         return map;
 
     }
 
-    }
+}
 
